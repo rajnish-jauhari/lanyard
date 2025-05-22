@@ -21,10 +21,18 @@ RUN apk update && apk add --no-cache \
   python3 \
   procps \
   coreutils \
-  mongodb-tools \
   postgresql15-client \
   redis \
-  nginx
+  nginx && \
+  # Conditionally install mongodb-tools if not s390x
+  if [ "$TARGETOS" = "linux" ] && [ "$TARGETARCH" != "s390x" ]; then \
+    apk add --no-cache mongodb-tools; \
+  fi && \
+  # Conditionally install oha if not s390x
+  if [ "$TARGETOS" = "linux" ] && [ "$TARGETARCH" != "s390x" ]; then \
+    wget -qO /usr/local/bin/oha https://github.com/hatoo/oha/releases/latest/download/oha-linux-${TARGETARCH} && \
+    chmod +x /usr/local/bin/oha; \
+  fi
 
 # Set up build arguments (provided by buildx)
 ARG TARGETOS
@@ -39,10 +47,6 @@ ENV GO_URL=https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.ta
 RUN wget -O go.tar.gz $GO_URL && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
-
-# Download and install oha
-RUN wget -qO /usr/local/bin/oha https://github.com/hatoo/oha/releases/latest/download/oha-linux-${TARGETARCH} && \
-    chmod +x /usr/local/bin/oha
 
 # Set Go path
 ENV PATH="/usr/local/go/bin:${PATH}"

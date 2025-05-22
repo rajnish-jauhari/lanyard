@@ -1,6 +1,8 @@
 name: Build and Push Multi-Arch Image
-on: [push]
-
+on:
+  push:
+    branches:
+      - main
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -21,7 +23,7 @@ jobs:
       - name: Build and Push Multi-Arch Image
         run: |
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64,linux/arm64,linux/s390x \
             -t quay.io/skupper/lanyard:latest \
             --push .
 
