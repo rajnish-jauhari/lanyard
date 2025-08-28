@@ -1,6 +1,10 @@
 FROM mirror.gcr.io/library/alpine:latest
 
-# Install base tools and nginx
+# Set up build arguments (provided by buildx)
+ARG TARGETOS
+ARG TARGETARCH
+
+# Install base tools and nginx, and conditionally add mongodb-tools + oha
 RUN apk update && apk add --no-cache \
   bash \
   curl \
@@ -24,23 +28,17 @@ RUN apk update && apk add --no-cache \
   postgresql15-client \
   redis \
   nginx && \
-  
-  RUN  if [ "$TARGETOS" = "linux" ] && [ "$TARGETARCH" != "s390x" ]; then \
+  if [ "$TARGETOS" = "linux" ] && [ "$TARGETARCH" != "s390x" ]; then \
     apk add --no-cache mongodb-tools && \
     wget -qO /usr/local/bin/oha https://github.com/hatoo/oha/releases/latest/download/oha-linux-${TARGETARCH} && \
     chmod +x /usr/local/bin/oha; \
   fi
 
-# Set up build arguments (provided by buildx)
-ARG TARGETOS
-ARG TARGETARCH
-
-# Set Go version
+# Set Go version and download URL
 ENV GO_VERSION=1.22.8
-# Compose the correct URL for the architecture
 ENV GO_URL=https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz
 
-# Download and install Go based on target architecture
+# Download and install Go
 RUN wget -O go.tar.gz $GO_URL && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
@@ -54,6 +52,5 @@ RUN go version
 # Expose default HTTP port
 EXPOSE 8080
 
-# Command to run nginx
+# Run nginx in foreground
 CMD ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx.conf"]
-
